@@ -181,19 +181,48 @@ decryption_squashed(c, d, xk, sig, S) = {
 	dec;
 }
 
-decryption_squashed2(c, d, xk, sig, R) = { \\ en construction
-	my(dec, y, p);
-	size = matsize(sig);
-	s = size[1];
-	S = size[2]
-	y = vector(S);
-	p = ceil(log(s+1)/log(2));
-
-	dec = Mod(0, d);
-	for(k = 1, s
-		for(i = 1, S,
-			yi =
+binary_round(x, p) = { \\ 2 > x >= 0, p precision parameter
+	res = [];
+	while(#res < p+1,
+		if (x >= 1,
+			x-= 1;
+			res = concat(res, 1);
+			x *= 2;,
+			\\ else
+			res = concat(res, 0);
+			x *= 2;
 		);
 	);
+	res;
+}
+
+decryption_squashed2(c, d, xk, sig, R) = { \\ en construction
+	my(dec, y, z, p);
+	size = matsize(sig);
+	s = size[1];
+	S = size[2];
+	y = matrix(s, S);
+	z = matrix(s, S);
+	p = ceil(log(s+1)/log(2));
+	dec = Mod(0, 2);
+
+	for(k = 1, s, \\ calcul des y_k,i
+		for(i = 1, S,
+			y[k, i] = lift(Mod(c[1]*xk[k], d)*R^i);
+			z[k, i] = binary_round(y[k, i], p);
+		);
+	);
+
+	my(mult);
+	mult = matrix(s, S);
+	for(i = 1, s,
+		for(j=1, S,
+			if(z[i,j] != 0,
+				\\ effectuer la multiplication sigma * z
+			);
+		);
+	);
+
+
 
 }
