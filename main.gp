@@ -87,17 +87,20 @@ main() = {
 
 	r = (wx[1]*(wx[2]^-1))%d; \\ paramètre dans pk
 	pk = mathnf(sk); \\ clé publique
+	R = random(d); while(gcd(R, d) != 1, R = random(d));
 
 	sig = generate_sigma(s, S);
+	sig2 = generate_sig2(s, S); \\ optimisé
 	\\ génère les ensembles xk et sig tels que sum(x(i)*sig(i)) = w
 	xk = generate_xk(w, d, sig, s, S);
+	xk2 = generate_xk2(w, d, sig, R, s, S);
 
 	/* Test de 10 décryptages aléatoires */
 
 	for(i = 1, 10,
 		a = random(2);
 		c = encrypt(a, pk, n);
-		m = decryption_squashed(c, d, xk, sig, n, S)%2;
+		m = decryption_squashed(c, d, xk, sig, S)%2;
 		if(m != a, print("Problème de décryptage"), print("Décryptage de ", a, " avec succès"));
 
 	);
@@ -111,6 +114,24 @@ generate_sigma(s, S) = {
 		while(sig[index] != 0, index = random(S-1)+1);
 		sig[index] = 1;
 	);
+	sig;
+}
+
+generate_sig2(s, S) = { \\ amélioration du squashing
+	sig = matrix(s, S);
+	my(used_indexes, row, index);
+	used_indexes = [];
+	row = 2;
+	while(#used_indexes < s-1,
+		index = random(S-2) + 2;
+		if(vecsearch(used_indexes, index) == 0,
+			sig[row, index] = 1;
+			used_indexes = concat(used_indexes, index);
+			vecsort(used_indexes);
+			row++;
+		);
+	);
+	sig[1,1] = 1;
 	sig;
 }
 
@@ -135,11 +156,44 @@ generate_xk(w, d, sig, s, S) = {
 	return(xk);
 }
 
-decryption_squashed(c, d, xk, sig, n, S) = {
+generate_xk2(w, d, sig, R, s, S) = { \\ amélioration du squashing
+	xk = vector(s);
+	my(row, sum_xk);
+	row = 2;
+	sum_xk = Mod(0, d);
+	for(i = 2, s,
+		j = vecsearch(sig, 1);
+		xk[i] = random(d);
+		sum_xk += xk[i]*(Mod(R, d)^j);
+	); \\ xk[1]*R + sum_xk = w
+	xk[1] = (w - sum_xk)*Mod(R, d)^-1;
+	sum_xk += xk[1];
+	xk;
+
+}
+
+decryption_squashed(c, d, xk, sig, S) = {
 	my(dec);
 	dec = Mod(0, d);
 	for (i = 1, S, dec += sig[i]*Mod(c[1]*xk[i], d);); \\ sum(x(i)*sig(i)) = w
 	dec = lift(dec);
 	while (dec > d>>2, dec -= d);
 	dec;
+}
+
+decryption_squashed2(c, d, xk, sig, R) = { \\ en construction
+	my(dec, y, p);
+	size = matsize(sig);
+	s = size[1];
+	S = size[2]
+	y = vector(S);
+	p = ceil(log(s+1)/log(2));
+
+	dec = Mod(0, d);
+	for(k = 1, s
+		for(i = 1, S,
+			yi =
+		);
+	);
+
 }
