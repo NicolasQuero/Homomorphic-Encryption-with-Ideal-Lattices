@@ -47,6 +47,7 @@ mod_lattice(v, B) = {
 encrypt(b, pk, n) = {
 	my(r);
 	my(e);
+	e = vector(n);
 	r = random_vec(n);
 	e = 2*r;
 	e[1] = e[1] + b;
@@ -93,7 +94,7 @@ main() = {
 	sig2 = generate_sig2(s, S); \\ optimisé
 	\\ génère les ensembles xk et sig tels que sum(x(i)*sig(i)) = w
 	xk = generate_xk(w, d, sig, s, S);
-	xk2 = generate_xk2(w, d, sig, R, s, S);
+	xk2 = generate_xk2(w, d, sig2, R, s, S); \\ optimisé
 
 	/* Test de 10 décryptages aléatoires */
 
@@ -118,21 +119,21 @@ generate_sigma(s, S) = {
 }
 
 generate_sig2(s, S) = { \\ amélioration du squashing
-	sig = matrix(s, S);
+	sig2 = matrix(s, S);
 	my(used_indexes, row, index);
 	used_indexes = [];
 	row = 2;
 	while(#used_indexes < s-1,
 		index = random(S-2) + 2;
 		if(vecsearch(used_indexes, index) == 0,
-			sig[row, index] = 1;
+			sig2[row, index] = 1;
 			used_indexes = concat(used_indexes, index);
 			vecsort(used_indexes);
 			row++;
 		);
 	);
-	sig[1,1] = 1;
-	sig;
+	sig2[1,1] = 1;
+	sig2;
 }
 
 generate_xk(w, d, sig, s, S) = {
@@ -157,18 +158,18 @@ generate_xk(w, d, sig, s, S) = {
 }
 
 generate_xk2(w, d, sig, R, s, S) = { \\ amélioration du squashing
-	xk = vector(s);
-	my(row, sum_xk);
+	xk2 = vector(s);
+	my(row, sum_xk2);
 	row = 2;
-	sum_xk = Mod(0, d);
+	sum_xk2 = Mod(0, d);
 	for(i = 2, s,
 		j = vecsearch(sig, 1);
-		xk[i] = random(d);
-		sum_xk += xk[i]*(Mod(R, d)^j);
-	); \\ xk[1]*R + sum_xk = w
-	xk[1] = (w - sum_xk)*Mod(R, d)^-1;
-	sum_xk += xk[1];
-	xk;
+		xk2[i] = random(d);
+		sum_xk2 += xk2[i]*(Mod(R, d)^j);
+	); \\ xk2[1]*R + sum_xk2 = w
+	xk2[1] = (w - sum_xk2)*Mod(R, d)^-1;
+	sum_xk2 += xk2[1];
+	xk2;
 
 }
 
@@ -196,7 +197,22 @@ binary_round(x, p) = { \\ 2 > x >= 0, p precision parameter
 	res;
 }
 
-decryption_squashed2(c, d, xk, sig, R) = { \\ en construction
+test_operations(nb) = {
+	a = random(2);
+	expected = a;
+	c = encrypt(a, pk, n);
+	for(i = 1, nb,
+		a = random(2);
+		b = random(2);
+		if(b==1, c += encrypt(a, pk, n); expected = (expected + a)%2; print(" + ", a);,
+		 c = mult_vec(c, encrypt(a, pk, n), n); expected = expected*a; print(" * ", a););
+		m = decryption_squashed(c, d, xk, sig, S)%2;
+		if(m == expected, print(i, " : Attendu ", expected, ", Obtenu : ", m),
+		 print(i, " : Attendu ", a, ", Obtenu : ", m, " (Problème)"); break;);
+	);
+}
+
+/*decryption_squashed2(c, d, xk, sig, R) = { \\ en construction
 	my(dec, y, z, p);
 	size = matsize(sig);
 	s = size[1];
@@ -222,7 +238,17 @@ decryption_squashed2(c, d, xk, sig, R) = { \\ en construction
 			);
 		);
 	);
-
-
-
 }
+
+gsa(var) = {
+	size = matsize(var);
+	s = size[1];
+	p = size[2];
+	for(row = 1, s,
+		stack = 0;
+		for(col = 1, p,
+
+		);
+	);
+}
+*/
